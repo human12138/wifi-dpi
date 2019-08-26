@@ -1,0 +1,42 @@
+函数：insertFlowInfo(flowInfo)
+参数：type(flowInfo) = dic
+flowInfo格式：{'Source_Mac': '', 'Dest_Mac': '', 'Source_IP': '', 'Dest_IP': '', 'Source_Port': '', 'Dest_Port': '', 'Protocol': '', 'Bytes': int, 'Host': ''}
+功能：向数据库插入一条流信息
+
+
+函数：countProtinfo(startTime=0, endTime=0)
+参数：startTime&endTime [year, month, day]
+year, month,day是str类型，按顺序存入list
+功能：统计各协议流量使用情况，在概况显示和历史查询中均可使用，无参数时默认按概况查询返回一小时之内的协议使用情况
+返回值: result   返回值为流量排名前十的协议字典,按流量降序排列
+type(result) = list
+例： [{'Protocol': 'HTTP', 'Bytes': 999}, {'Protocol': 'DNS', 'Bytes': 10},...等流量前十协议按流量降序排列]
+
+
+函数：countIPinfo(MacInfo, IpInfo)
+参数：MacInfo, IpInfo type(IpInfo) = type(MacInfo) = str 客户端Mac地址和IP地址
+返回值：IP_Info  type(IP_Info) = dic 每个key对应的value是list或dic
+例：{'Proto_Info': [{'Protocol': 'HTTP', 'Bytes': 100}, {'Protocol': 'DNS', 'Bytes': 66},...等流量前十协议按流量降序], 'Host_Info': [{'HOST': 'qq', 'Bytes': 100}, {'Host': 'baidu',  'Bytes': 80},...等流量前十网址按流量降序], 'Flow_Info': [{keys:'Dest_Mac', 'Dest_IP', 'Source_Port', 'Dest_Port', 'Protocol', 'Bytes', 'Host'}, ...该客户端下流信息], 'Pic_Path': [{keys:'Dest_IP', 'Pic_Path', 'DateTime'}, ...十张图片], 'Black_Host': {'xxx.com': False, 'xxx.net': True,...网址黑白名单}}
+
+字典键：Black_Host值为dic，其余键值均为list，list中的每个字典键相同值不同
+功能：返回按IP查询的全部数据内容
+
+
+函数: insertPictureInfo(fileName)
+参数：fileName type(fileName) = str 一张图片的图片名 源IP_目的IP_时间_文件名
+功能: 向数据库插入一条图片信息
+
+
+函数：detectIP_bytime(startTime=0, endTime=0)
+参数：startTime&endTime [year, month, day]
+year, month,day是str类型，按顺序存入list
+功能：查询某段时间内全部客户端（以IP表示），网址历史记录，无参数时返回近一小时活跃的IP用于在概况中显示所有节点流量，在概况中显示所有节点时不现实最后活跃时间（无'IP_activetime'字段）
+返回值：IP_Count type(IP_Count) = dic
+例：{'Client_Bytes': [{'Source_Mac': 'xxx', Source_IP': 'xxx', 'Bytes'： 90}, {'Source_Mac': 'yyy', 'Source_IP': 'yyy', 'Bytes': 10},...等全部客户端流量]， 'Host_Bytes': [{'Host': 'ooo', 'Dest_IP': 'xxx', 'Bytes': 100}...等网址流量], 'IP_activetime': [{keys:'Source_Mac', 'Source_IP', 'Date', 'Time'}, {keys:'Source_Mac', 'Source_IP', 'Date', 'Time'},...IP最后活跃时间]}
+
+
+函数：MacToIP(Macaddr)
+参数：Macaddr type(Macaddr) = str 一个客户端的Mac地址
+功能：传入一个Mac地址返回对应的IP地址
+返回值：考虑到一个Mac地址可能对应多个IP返回值是一个dic，Mac地址是键，值是一个列表存放所有对应的IP
+例：{'xx:xx:xx:xx:xx:xx': ['xxx', 'yyy',...所有IP，只有一个也是list长度为1]}

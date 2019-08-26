@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="/static/js/jquery.min.js" ></script>
+    <style>
+        .black_overlay{
+            display: none;
+            position: absolute;
+            top: 0%;
+            left: 0%;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            z-index:1001;
+            -moz-opacity: 0.8;
+            opacity:.80;
+            filter: alpha(opacity=88);
+        }
+        .white_content {
+            display: none;
+            position: absolute;
+            top: 25%;
+            left: 25%;
+            width: 55%;
+            height: 55%;
+            padding: 20px;
+
+            background-color: white;
+            z-index:1002;
+            overflow: auto;
+        }
+        .search_txt{
+            width: 100%;
+            height: 70%;
+        }
+    </style>
+    <style type="text/css">
+        *{
+            padding:0px;
+            margn:0px;
+        }
+        table#stuRecordTable{width:600px;margin:40px auto;text-align: center;}
+        table#stuRecordTable tr{height:30px;}
+    </style>
+
+</head>
+<body id="body">
+
+<iframe src='https://www.baidu.com' style=";width:100%;height:600px;"></iframe>
+<div id="light" class="white_content"><h3 align="center">MAC地址黑名单</h3>
+    <table id="stuRecordTable" border="1" cellpadding="0" cellspacing="0">
+        <tr>
+            <th>MAC地址</th>
+            <th>操作</th>
+        </tr>
+        <tr>
+            <td><input value="输入正确的MAC地址"></td>
+            <td>  <input type="button" value="添加" onclick="addRow()"/></td>
+        </tr>
+    </table>
+    <input  type=button align="center" onclick = "hiddiv()" value="取消"> 
+    <input  type=button align="center" onclick = "save()" value="确定"> </div>
+<div id="fade" class="black_overlay"></div>
+<div style='position:absolute;bottom:50px;right:50px;'>
+    <input type="button" id="btn" value="MAC地址黑名单" onclick="showdiv()">
+</div>
+
+<div id="light" class="white_content"><h3 align="center">MAC地址黑名单</h3>
+    <table id="stuRecordTable" border="1" cellpadding="0" cellspacing="0">
+        <tr>
+            <th>MAC地址</th>
+            <th>操作</th>
+        </tr>
+        <tr>
+            <td><input value="输入正确的MAC地址"></td>
+            <td>  <input type="button" value="添加" onclick="addRow()"/></td>
+        </tr>
+    </table>
+    <input  type=button align="center" onclick = "hiddiv()" value="取消"> 
+    <input  type=button align="center" onclick = "save()" value="确定"> </div>
+<div id="fade" class="black_overlay"></div>
+<div style='position:absolute;bottom:50px;right:50px;'>
+    <input type="button" id="btn" value="MAC地址黑名单" onclick="showdiv()">
+</div>
+
+<div id="bg-1" class="white_content"><h3 align="center">查询安全报告</h3>
+    从<input type="date" id="start_date">
+    至<input type="date" id="stop_date">
+    <input type="submit" onclick="showsearch()" value="查询">
+    <textarea id="text_area" class="search_txt" text_align=center" readonly="readonly" rows="10" cols="50">选择日期查询安全报告</textarea>
+    <input  type=button align="center" style="bottom: auto" onclick = "document.getElementById('bg-1').style.display='none';document.getElementById('bg-2').style.display='none'" value="关闭"> </div>
+<div id="bg-2" class="black_overlay"></div>
+<div style='position:absolute;bottom:50px;right:150px;'>
+    <input type="button" id="bg-btn" value="查询安全报告" onclick="showdiv1()">
+</div>
+
+
+<script>
+    $(document).ready(function(){
+        console.log($.ajax);
+    });
+    function showdiv(){
+        document.getElementById('light').style.display='block';
+        document.getElementById('fade').style.display='block';
+    }
+    function hiddiv(){
+        document.getElementById('light').style.display='none';
+        document.getElementById('fade').style.display='none';
+    }
+    function showdiv1(){
+        document.getElementById('bg-1').style.display='block';
+        document.getElementById('bg-2').style.display='block';
+    }
+
+
+</script>
+<script type="text/javascript">
+    function $(eleStr){
+        switch(eleStr.substr(0,1)){
+            case "#":
+                return document.getElementById(eleStr.substr(1));
+                break;
+            case ".":
+                return document.getElementsByClassName(eleStr.substr(1));
+                break;
+            case "_":
+                return document.getElementsByName(eleStr.substr(1));
+                break;
+            default:
+                return document.getElementsByTagName(eleStr);
+                break;
+        }
+    }
+
+    onload = function(){
+        var arr = {{data|safe}};    
+        for(i=0;i<arr.length;i++){
+            addRow(arr[i])
+        }
+        doOperator();
+    }
+
+    function doOperator(){
+
+        var updates =$(".update");
+        var dels =$(".del");
+        for (var i = 0; i < dels.length; i++) {
+            dels[i].onclick =   function(){
+                if(confirm("是否确定删除？")){  //提示是否删除
+                    //var row = this.parentNode.parentNode; //取到tr对象
+                    //row.parentNode.removeChild(row);  //移除tr
+                    $("#stuRecordTable").deleteRow(this.parentNode.parentNode.rowIndex);
+                }
+            }
+            updates[i].onclick = function(){
+                var operatorCell = this.parentNode.parentNode.getElementsByTagName("td")[1]; //取到要操作的td对象
+                //1.修改按钮上有两个功能：修改，确定修改
+                if(this.value == "修改"){
+                    this.value = "确定";
+                    operatorCell.innerHTML ="<input value='"+operatorCell.innerHTML+"'/>";//把内容变成文本框
+                    //做修改操作
+                }else{
+                    operatorCell.innerHTML =operatorCell.getElementsByTagName("input")[0].value;//把文本框变成内容
+                    this.value = "修改";
+                  //做确定修改
+                }
+            }
+        }
+    }
+    function addRow(mac) {
+        var rs = $("#stuRecordTable").rows;  //table取到所有的行
+        var insertR = $("#stuRecordTable").insertRow(rs.length - 1); //给表格添加一行(不包单元格)
+        //insertR.innerHTML = rs[1].innerHTML;
+        var c1 = insertR.insertCell(0);
+        c1.innerHTML = mac;
+        var c2 = insertR.insertCell(1);
+        c2.innerHTML = '<input type="button" value="删除" class="del"/><input type="button" value="修改" class="update"/>';
+
+        doOperator();
+
+        var cs = rs[1].cells; //取到当前行的所有单元格
+        //alert(cs[1].innerHTML);
+
+
+    }
+    function save(){
+        var data_mac=[]
+	    var d = 1
+        var tab = document.getElementById("stuRecordTable");
+        var rows = tab.rows;
+        for(var i=1;i<rows.length-1;i++){
+            data_mac[i-1]=rows[i].cells[0].innerHTML;
+        }
+        console.log(data_mac)
+        jQuery.ajax({
+            type:"GET",
+            url:"save/",
+            data:{
+                "mac":data_mac,
+            },
+	    traditional:true,
+            success:function(result){
+                alert(result);
+            },
+        });
+        hiddiv();
+        
+    }
+    function showsearch(){
+        var start_date = document.getElementById("start_date").value;
+        var stop_date = document.getElementById("stop_date").value;
+        if (start_date == ''){
+            alert("日期不能为空");
+            return;
+        }
+        if (stop_date == ''){
+            alert("日期不能为空");
+            return;
+        }
+        jQuery.ajax({
+            type:"GET",
+            url:"search/",
+            data:{
+                "start_date":start_date,
+                "stop_date" : stop_date
+            },
+	    traditional:true,
+            success:function(result){
+                result = JSON.parse(result)
+                if(result["flag"] == 0){
+                    document.getElementById("text_area").value=result["data"];
+                }
+                else if(result["flag"] == 1){
+                    document.getElementById("text_area").value=result["data"];
+                }
+
+            },
+        });
+    }
+</script>
+</body>
+</html>
