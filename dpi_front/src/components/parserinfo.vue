@@ -11,6 +11,14 @@
             </p>
           <table style="text-align:left">
             <tr v-for="sta in sta_info"><td>{{sta.info_name}}</td><td>{{sta.info_data}}</td></tr>
+            <tr><td>操作:</td>
+              <td><Button id='name' @click="choose_ap" type="primary">切换AP</Button>
+                <Modal v-model="modal1"
+                title="选择AP"
+                @on-ok="ok">
+                <Table :columns="ap_col" :data="ap_data1"></Table>
+                </Modal>
+              </td></tr>
             <tr>
               <td>查询日期范围:</td>
               <td>
@@ -48,7 +56,7 @@
               </p></td></tr>
           </table>
           <Divider />
-          <Table :columns='ip_col' :data='ip_data' :size='small' :height='200'></Table>
+          <Table :columns='ip_col' :data='ip_data' :size='small':width='200' :height='200'></Table>
       </Card>
     </div>
       <Tabs type='card' value="network" @on-click="choose_layer" style="width: 30%;height: 400px;display: inline-block;">
@@ -67,7 +75,7 @@
     </Select>
     <Divider><h2>包数据记录</h2></Divider>
     <Table border :columns="columns1" :data="data1" default></Table>
-    <Page :total="100" show-elevator @on-change='change_page'/>
+    <Page :total="count" show-elevator @on-change='change_page'/>
   </div>
 </template>
 <style>
@@ -120,13 +128,13 @@ export default {
     }
   },
   mounted() {
-    //this.getdata(this.$route.query.ip,this.$route.query.mac);
+    this.getdata(this.$route.query.ip,this.$route.query.mac,this.$route.query.start_date,this.$route.query.stop_date);
     //this.draw_protocol('protocol');
-    this.drawDes();
-    this.drawport();
+    //this.drawDes();
+    //this.drawport();
     //this.draw_website('website');
-    this.draw_protocol('protocol');
-    this.initEchart('container');
+    //this.draw_protocol('protocol');
+    //this.initEchart('container');
   },
   beforeDestroy() {
     if (!this.chart) {
@@ -137,6 +145,9 @@ export default {
   },
   data () {
     return {
+      count: '',
+      isRouterAlive: true,
+      modal1:false,
       visible: false,
       dates: '',
       open: false,
@@ -145,6 +156,9 @@ export default {
       name1 :1,
       ip : this.$route.query.ip,
       mac : this.$route.query.mac,
+      ap_mac:this.$route.query.ap_mac,
+      start_date: this.$route.query.start_date,
+      stop_date: this.$route.query.stop_date,
       /*
       columnsimg : [
         {
@@ -205,6 +219,10 @@ export default {
     ],*/
     protoList:[
       {
+        value: 'ALL',
+        label: '全部',
+      },
+      {
         value:'DNS',
         label:'DNS',
       },
@@ -216,10 +234,23 @@ export default {
         value: 'SMTP',
         label: 'SMTP',
       },
+    ],
+    ap_col:[
       {
-        value: 'POP3',
-        label: 'POP3',
-      }
+        title: 'AP名称',
+        key: 'name',
+        tooltip:true
+      },
+      {
+        title: 'MAC地址',
+        key: 'mac',
+        tooltip:true
+      },
+      {
+        title: '最后连接时间',
+        key: 'date',
+        tooltip:true
+      },
     ],
     ip_col:[
       {
@@ -248,22 +279,17 @@ export default {
             tooltip:true
           },
           {
-            title: '操作',
+            title: '查看AP详情',
             key: 'action',
             width: '100',
+            align: 'center',
             render: (h,params)=>{
-              return h('div',
-              [h('Button',{
+              return h('div',{
                 props:{
-                  type: 'text',
-                  size: 'small'
-                },
-                on:{
-                  click: ()=>{
-                    //this.ip_detail(params.index)
-                  }
+                  id: 'd1'
                 }
-              },'切换所属AP'),
+              },
+              [
               h('Button',{
                 props:{
                   type: 'text',
@@ -274,7 +300,7 @@ export default {
                     //this.ip_detail(params.index)
                   }
                 }
-              },'查看AP历史'),
+              },'历史'),
               h('Button',{
                 props:{
                   type: 'text',
@@ -285,13 +311,14 @@ export default {
                     //this.ip_detail(params.index)
                   }
                 }
-              },'查看AP实时')
+              },'实时')
             ]);
           }
           }
         ]
       }
       ],
+      /*
       ip_data:[
         {ip_history:'192.168.126.2'},
         {ip_history:'192.168.126.3'},
@@ -369,6 +396,7 @@ export default {
           info_data: 'D4:EE:07:32:01:5A'
         },
       ],
+      /*
       desdata_x :  [10, 52, 200, 334, 390, 330, 220,10, 52, 200],
       desdata_y :  ['192.168.199.126', '192.168.199.124', '192.168.1.3', '192.168.1.2',
       '192.168.3.6','192.168.199.103', '192.168.3.1','192.168.3.6','192.168.199.103', '192.168.3.1'],
@@ -451,7 +479,7 @@ export default {
             dangerous: false
           },
         ],
-
+*/
       columns1: [
         {
           title: '目的MAC地址',
@@ -517,38 +545,58 @@ export default {
 
       charts: '',
       myChart: '',
-      /*
-      website_label: '',
-      website_data: '',
+      portdata_x: '',
+      portdata_y: '',
+      desdata_x: '',
+      desdata_y: '',
+      ip_data: [],
+      ap_data1: [],
+      //website_label: '',
+      //website_data: '',
       protocol_label: '',
       protocol_data: '',
       data1:[],
       ap_data:'',
-      */
+
       modal1: false,
     }
    },
   methods: {
-    getdata: function(Ip,Mac){
+    getdata: function(Ip,Mac,start_date,stop_date){
       let s = this
       this.$axios.get('getinfo',{
         params:{
           ip: Ip,
           mac :Mac,
+          ap_mac:this.ap_mac,
+          start_date: start_date,
+          stop_date : stop_date,
+          page_id : 0
         }
       })
       .then(function(response){
         s.protocol_label = response.data['protocol_label'];
         s.protocol_data = response.data['protocol_data'];
-        s.website_label = response.data['website_label'];
-        s.website_data = response.data['website_data'];
+        s.desdata_x = response.data['desdata_x'];
+        s.desdata_y = response.data['desdata_y'];
+        s.portdata_x = response.data['portdata_x'];
+        s.portdata_y = response.data['portdata_y'];
+        s.ip_data = response.data['ip_data'];
+        s.ap_data1 = response.data['ap_data1'];
+        s.count = response.data['count'];
         s.data1 = response.data['ipinfo'];
-        s.ap_data = response.data['ap_data'];
+        //s.website_label = response.data['website_label'];
+        //s.website_data = response.data['website_data'];
+        //s.data1 = response.data['ipinfo'];
+        //s.ap_data = response.data['ap_data'];
         //alert(response.data['ipinfo'][0]['srcmac']);
         //alert(response.data['ap_data'][0]['name']);
-        s.draw_website('website');
+        s.drawDes();
+        s.drawport();
         s.draw_protocol('protocol');
-        s.initEchart('container');
+        //s.draw_website('website');
+        //s.draw_protocol('protocol');
+        //s.initEchart('container');
       });
     },
     draw_website: function(id){
@@ -731,7 +779,7 @@ export default {
       }
       else if (name == 'application') {
         this.draw_protocol('protocol');
-        this.draw_website('website');
+        //this.draw_website('website');
       }
     },
     drawDes: function() {
@@ -817,7 +865,7 @@ export default {
         },
         yAxis: [{
           type: 'category',
-          data: this.desdata_y,
+          data: this.portdata_y,
           axisTick: {
             alignWithLabel: true
           }
@@ -829,11 +877,25 @@ export default {
           name: '端口统计',
           type: 'bar',
           barWidth: '60%',
-          data: this.desdata_x,
+          data: this.portdata_x,
         }]
       })
     },
     change_page :function(index){
+      let s = this
+      this.$axios.get('getflow',{
+        params:{
+          ip: this.$route.query.ip,
+          mac: this.$route.query.mac,
+          ap_mac:this.ap_mac,
+          start_date: this.start_date,
+          stop_date : this.stop_date,
+          page_id : index-1,
+        }
+      })
+      .then(function(response){
+        s.data1 = response.data['ipinfo'];
+      });
     },
     handleClick () {
       this.open = true;
@@ -847,36 +909,98 @@ export default {
     },
     handleOk () {
         this.showdate = this.datechange(this.dates[0])+"-"+this.datechange(this.dates[1]);
+        this.date_route(this.datechange(this.dates[0]).replace('/','-').replace('/','-'),this.datechange(this.dates[1]).replace('/','-').replace('/','-'))
         this.open = false;
         this.visible = false;
+        this.start_date = start_date;
+        this.stop_date = stop_date;
     },
     dropopen (){
       this.visible=true;
     },
+
+    getDay(day){
+      var today = new Date();
+      var targetday_milliseconds=today.getTime() + 1000*60*60*24*day;
+      today.setTime(targetday_milliseconds); //注意，这行是关键代码
+      var tYear = today.getFullYear();
+      var tMonth = today.getMonth();
+      var tDate = today.getDate();
+      tMonth = this.doHandleMonth(tMonth + 1);
+      tDate =  this.doHandleMonth(tDate);
+      return tYear+"-"+tMonth+"-"+tDate;
+    },
+    doHandleMonth(month){
+      var m = month;
+      if(month.toString().length == 1){
+        m = "0" + month;
+      }
+      return m;
+    },
     datechoose:function(name){
       if(name=='1'){
+
+        var start_date=this.getDay(-6);
+        var stop_date=this.getDay(0);
+        this.date_route(start_date,stop_date);
+        //alert(start_date+" "+stop_date);
         this.showdate = '一周';
         this.visible=false;
+        this.start_date = start_date;
+        this.stop_date = stop_date;
       }
       else if (name=='2') {
+        var start_date=this.getDay(-30);
+        var stop_date=this.getDay(0);
+        this.date_route(start_date,stop_date);
         this.showdate = '一个月';
         this.visible=false;
+        this.start_date = start_date;
+        this.stop_date = stop_date;
       }
       else if (name=='3') {
+        var start_date=this.getDay(-91);
+        var stop_date=this.getDay(0);
+        this.date_route(start_date,stop_date);
         this.showdate = '三个月';
         this.visible=false;
+        this.start_date = start_date;
+        this.stop_date = stop_date;
       }
       else if (name=='4') {
+        var start_date=this.getDay(-182);
+        var stop_date=this.getDay(0);
+        this.date_route(start_date,stop_date);
         this.showdate = '六个月';
         this.visible=false;
+        this.start_date = start_date;
+        this.stop_date = stop_date;
       }
       else if (name=='5') {
+        var start_date=this.getDay(-365);
+        var stop_date=this.getDay(0);
+        this.date_route(start_date,stop_date);
         this.showdate = '一年';
         this.visible=false;
+        this.start_date = start_date;
+        this.stop_date = stop_date;
       }
       else if (name=='6') {
 
       }
+    },
+    date_route: function(start_date,stop_date){
+      this.$router.push({
+        path: '/parserinfo',
+        query:{
+          ip : this.$route.query.ip,
+          mac: this.$route.query.mac,
+          ap: this.ap_mac,
+          start_date:start_date,
+          stop_date: stop_date,
+          page_id : 0,
+        }
+      })
     },
     datechange: function(date){
         var month = date.getMonth()+1;
@@ -887,6 +1011,13 @@ export default {
     },
     choose_proto: function(value){
       alert(value)
+    },
+    choose_ap: function(){
+      this.modal1=true
+    },
+    reload () {
+      this.isRouterAlive = false
+      this.$nextTick(() => (this.isRouterAlive = true))
     }
   }
 }

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>{{ap_name}}的历史记录</h1>
+    <h1><Tooltip content='AP名称'>{{ap_name}}</Tooltip>的历史记录</h1>
     <Divider />
     <div id="d1">
       <div style="padding: 20px width:300px">

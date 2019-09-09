@@ -208,7 +208,7 @@ export default {
         },
         {
           info_name : 'MAC地址:',
-          info_data : 'D4:EE:07:32:01:5A',
+          info_data : '94:DB:DA:3E:8F:CF',
         },
         {
           info_name : '局域网IP:',
@@ -262,7 +262,7 @@ export default {
     }],
 
       data1:[
-        {ip: '192.168.199.126',mac:'34:23:87:A9:26:9B'},
+        {ip: '192.168.199.126',mac:'58:66:BA:6C:00:D0'},
         {ip: '192.168.3.103',mac:'D4:EE:07:32:01:5A'},
         {ip: '192.168.3.2',mac:'D4:EE:07:32:01:5A'},
         {ip: '192.168.3.3',mac:'D4:EE:07:32:01:5A'},
@@ -359,7 +359,7 @@ export default {
           type: 'value'
         }],
         series: [{
-          name: '服务器I流量',
+          name: '服务器流量',
           type: 'bar',
           barWidth: '60%',
           data: this.desdata_x,
@@ -480,13 +480,36 @@ export default {
         }
       })
     },
+    getDay(day){
+      var today = new Date();
+      var targetday_milliseconds=today.getTime() + 1000*60*60*24*day;
+      today.setTime(targetday_milliseconds); //注意，这行是关键代码
+      var tYear = today.getFullYear();
+      var tMonth = today.getMonth();
+      var tDate = today.getDate();
+      tMonth = this.doHandleMonth(tMonth + 1);
+      tDate =  this.doHandleMonth(tDate);
+      return tYear+"-"+tMonth+"-"+tDate;
+    },
+    doHandleMonth(month){
+      var m = month;
+      if(month.toString().length == 1){
+        m = "0" + month;
+      }
+      return m;
+    },
     ip_detail: function(index) {
+      var start_date=this.getDay(-6);
+      var stop_date=this.getDay(0);
       //alert(this.Ip);
       this.$router.push({
         path: '/parserinfo',
         query:{
           ip : this.data1[index].ip,
-          mac: this.data1[index].mac
+          mac: this.data1[index].mac,
+          ap_mac: this.ap_info[1].info_data,
+          start_date: start_date,
+          stop_date: stop_date,
         }
       })
     },

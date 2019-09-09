@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 import pymysql
 from wifi_attack.dfidb import *
+from wifi_attack.interface_sta import *
 
 import json
 import datetime
@@ -239,86 +240,79 @@ def getindex(request):
 
 def getinfo(request):
     if request.method == "GET":
-        #print(request.GET['ip'])
+
         ip = str(request.GET['ip'])
         mac = str(request.GET['mac'])
-        print(ip)
-        print(mac)
-        list=countIPinfo(mac, ip)
-        proto_list = list['Proto_Info']
-        host_list = list['Host_Info']
-        flow_list = list['Flow_Info']
-        host_black = list['Black_Host']
+        ap_mac = str(request.GET['ap_mac'])
+        start_date = str(request.GET['start_date']).split('-')
+        stop_date = str(request.GET['stop_date']).split('-')
+        page_id = int(request.GET['page_id'])
+        #print(ip+" "+mac+" "+ap_mac+" "+start_date+" "+stop_date)
+
+
+        ip_list = getstaip(ap_mac,mac,start_date,stop_date)
+        ap_list = usedap(ap_mac,mac,start_date,stop_date)
+        list = stacount(ap_mac,mac,start_date,stop_date)
+        flow_list = staflowinfo(ap_mac,mac,start_date,stop_date,page_id)
+        flow = flow_list[0]
+        count = flow_list[1]
+
+        Ip_list = list['IP_Bytes']
+        port_list = list['port_Bytes']
+        proto_list = list['proto_Bytes']
+
         protocol_label = []
         protocol_data = []
-        website_label = []
-        website_data = []
+        desdata_x = []
+        desdata_y = []
+        port_x = []
+        port_y = []
+        ip_data = []
+        ap_data1 = []
         ipinfo = []
-        print(proto_list)
+
         for i in range(len(proto_list)):
             protocol_label.append(proto_list[i]['Protocol'])
-            protocol_data.append({'name': proto_list[i]['Protocol'],'value':proto_list[i]['s_byte']})
+            protocol_data.append({'name': proto_list[i]['Protocol'],'value':proto_list[i]['sum_bytes']})
+        for i in range(len(Ip_list)):
+            desdata_x.append(Ip_list[i]['sum_bytes'])
+            desdata_y.append(Ip_list[i]['Dest_IP'])
+        for i in range(len(port_list)):
+            port_x.append(port_list[i]['sum_bytes'])
+            port_y.append(port_list[i]['Dest_Port'])
+        for ip in ip_list:
+            ip_data.append({'ip_history':ip['Source_IP']})
+        for ap in ap_list:
+            ap_data1.append({'mac': ap['Dest_Mac'],'date':(str(ap['last_date'])+" "+str(ap['last_time']))})
+        print(ip_data)
 
-        #print(protocol_label)
-        #print(protocol_data)
-        for i in range(len(host_list)):
-            website_label.append(host_list[i]['Host'])
-            website_data.append({'name': host_list[i]['Host'],'value':host_list[i]['s_byte']})
-        for flow in flow_list:
-            if host_black[flow['Host']] == False:
-                ipinfo.append({'desmac':flow['Dest_Mac'],'desip':flow['Dest_IP'],'srcport':flow['Source_Port'],
-                          'desport':flow['Dest_Port'],'protocol':flow['Protocol'],'address':flow['Host'],
-                          'byte':flow['Bytes'],'dangerous':'false'})
-            else:
-                ipinfo.append({'desmac': flow['Dest_Mac'], 'desip': flow['Dest_IP'], 'srcport': flow['Source_Port'],
-                          'desport': flow['Dest_Port'], 'protocol': flow['Protocol'], 'address': flow['Host'],
-                          'byte': flow['Bytes'], 'dangerous': 'true'})
-        ap_data={'name': 'xd_stu','value': 'D4:EE:07:32:01:5A',
-                  'children': [{'name': 'D4:EE:07:32:01:5A','value': '192.168.3.1'},
-                               {'name': 'D4:EE:07:32:01:5A','label': {'color': 'green'}},
-                               {'name': 'D4:EE:07:32:01:5A'},
-                               {'name': 'D4:EE:07:32:01:5A'},
-                               {'name': 'D4:EE:07:32:01:5A'},
-                               {'name': 'D4:EE:07:32:01:5A'},
-                               {'name': 'D4:EE:07:32:01:5A'},
-                               ]
-                  },
-
-        '''
-        website_label = ['baidu', 'bilibili', 'neteasy', 'iqiyi', 'qq']
-        website_data = [{"value": 335, "name": 'baidu'},{"value": 310, "name": 'neteasy'},{"value": 234, "name": 'iqiyi'},
-                        {"value": 135, "name": 'qq'},{"value": 1548, "name": 'bilibili'}]
-        protocol_label = ['HTTP', 'DNS', 'SSL', 'DHCP', 'Unknow']
-        protocol_data = [{"value": 335, "name": 'HTTP'},{"value": 310, "name": 'DNS'},{"value": 234, "name": 'DHCP'},
-                         {"value": 135, "name": 'Unknow'},{"value": 1548, "name": 'SSL'}]
-        ipinfo = [
-            {'srcmac': "34:23:87:A9:26:9B",'desmac': "D4:EE:07:32:01:5A",'srcip': "192.168.199.162",'desip': "119.3.227.169",
-             'srcport': "17600",'desport': "47873",'address': "www.bilibili.com",'date': "2019-06-19 23:13:52",'protocol': "DNS",'byte': "6956",
-            'dangerous': 'false'},
-            {'srcmac': "34:23:87:A9:26:9B",'desmac': "D4:EE:07:32:01:5B",'srcip': "192.168.199.162",'desip': "119.3.227.168",
-             'srcport': "17600",'desport': "47875",'address': "http://www.baidu.com",'date': "2019-06-19 23:13:43",'protocol': "HTTP",'byte': "6956",
-             'dangerous': 'false'},
-            {'srcmac': "34:23:87:A9:26:9B",'desmac': "D4:EE:07:32:01:50",'srcip': "192.168.199.162",'desip': "119.3.227.166",
-             'srcport': "17600",'desport': "47870",'address': "http://zkhhxq.cool168.com/",'date': "2019-06-19 23:13:52",'protocol': "HTTP",'byte': "6956",
-             'dangerous': 'true'},
-            {'srcmac': "34:23:87:A9:26:9B",'desmac': "D4:EE:07:32:01:5B",'srcip': "192.168.199.162",'desip': "119.3.227.120",
-             'srcport': "17600",'desport': "47875",'address': "http://yl163.net/",'date': "2019-06-19 23:13:53",'protocol': "HTTP",'byte': "6956",
-             'dangerous': 'true'},
-        ]
-        
-        imgurl = [{"url1":"/static/img/1.jpg","url2":"/static/img/2.jpg","url3":"/static/img/3.jpg",
-                   "url4":"/static/img/4.jpg","url5":"/static/img/5.jpg"},
-                  {"url1": "/static/img/6.png", "url2": "/static/img/5.jpg", "url3": "/static/img/1.jpg",
-                   "url4": "/static/img/3.jpg", "url5": "/static/img/6.png"}
-                  ]
-        
-        data = {"website_label":website_label,"website_data":website_data,"protocol_label":protocol_label,
-                "protocol_data":protocol_data,"ipinfo":ipinfo,"imgurl":imgurl}
-        '''
-        print(ap_data)
-        data = {"website_label":website_label,"website_data":website_data,"protocol_label":protocol_label,
-                "protocol_data":protocol_data,"ipinfo":ipinfo,"ap_data":ap_data}
+        for f in flow:
+            ipinfo.append({'desmac':f['Dest_Mac'],'desip':f['Dest_IP'],'desport':f['Dest_Port'],'protocol':f['Protocol'],'address':f['Host'],
+                          'byte':f['Bytes'],'dangerous':'false','date':(str(f['Date'])+" "+str(f['Time']))})
+        data = {"protocol_label":protocol_label,"protocol_data":protocol_data,"ipinfo":ipinfo,"desdata_x":desdata_x,
+                "desdata_y":desdata_y,"portdata_x":port_x,"portdata_y":port_y,"ip_data":ip_data,"ap_data1":ap_data1,"count":count}
+        print(count)
         return HttpResponse(json.dumps(data))
+
+def getflow(request):
+    ip = str(request.GET['ip'])
+    mac = str(request.GET['mac'])
+    ap_mac = str(request.GET['ap_mac'])
+    start_date = str(request.GET['start_date']).split('-')
+    stop_date = str(request.GET['stop_date']).split('-')
+    page_id = int(request.GET['page_id'])
+
+    flow_list = staflowinfo(ap_mac,mac,start_date,stop_date,page_id)
+    if page_id == 0:
+        flow = flow_list[0]
+    else:
+        flow = flow_list
+    ipinfo = []
+    for f in flow:
+        ipinfo.append({'desmac': f['Dest_Mac'], 'desip': f['Dest_IP'], 'desport': f['Dest_Port'],
+                       'protocol': f['Protocol'], 'address': f['Host'],'byte': f['Bytes'], 'dangerous': 'false','date':(str(f['Date'])+" "+str(f['Time']))})
+    data = {"ipinfo":ipinfo,}
+    return HttpResponse(json.dumps(data))
 
 
 def getapinfo(mac):

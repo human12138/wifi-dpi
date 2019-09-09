@@ -33,6 +33,7 @@ urlpatterns = [
     path('getindex/',view.getindex),
     #path('getapinfo',view.getapinfo),
     path('getinfo',view.getinfo),
-    path('getfile/',view.getfile)
+    path('getfile/',view.getfile),
+    path('getflow/',view.getflow)
 
 ]
